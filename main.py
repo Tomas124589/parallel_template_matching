@@ -77,11 +77,10 @@ if __name__ == '__main__':
     opencv_end = time.time() - start
     print("opencv took {:.4f} secs".format(opencv_end))
 
-    start = time.time()
-
     image = rgb2gray(np.array(Image.open(img_src)))
     template = rgb2gray(np.array(Image.open(template_src)))
 
-    print(normalized_cross_correlation(image, template, 18))
+    start = time.time()
+    print(normalized_cross_correlation(image, template, 12))
     ccor_end = time.time() - start
     print("nccor took {:.4f} secs and was {:.4f}x slower".format(ccor_end, ccor_end / opencv_end))
