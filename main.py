@@ -41,18 +41,21 @@ def normalized_cross_corellation(image: np.ndarray, template: np.ndarray):
 
     shape = (img_height - templ_height + 1, img_width - templ_width + 1)
     template_mean = np.mean(template)
+    template_diff = template - template_mean
+    template_sum_sqrt = np.sum((template - template_mean) ** 2)
 
-    max_result = max_x = max_y = 0
+    max_result = 0.0
+    max_x = max_y = 0
     for x in range(shape[0]):
         for y in range(shape[1]):
             window = image[x:x + templ_height, y:y + templ_width]
             window_mean = np.mean(window)
+            window_diff = window - window_mean
 
-            numerator = np.sum((window - window_mean) * (template - template_mean))
-            denominator = np.sqrt(
-                np.sum((window - window_mean) ** 2) * np.sum((template - template_mean) ** 2))
+            numerator = np.sum(window_diff * template_diff)
+            denominator = np.sqrt(np.sum(window_diff ** 2) * template_sum_sqrt)
 
-            result = numerator / denominator if denominator != 0 else 0
+            result = numerator / denominator
 
             if result > max_result:
                 max_x = x
