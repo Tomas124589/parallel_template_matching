@@ -3,6 +3,7 @@ import time
 import cv2
 import numpy as np
 from PIL import Image
+from numba import njit
 
 
 def rgb2gray(matrix):
@@ -30,26 +31,35 @@ def template_match_opencv(image_src, template_src, show):
 
         cv2.waitKey()
 
+    return max_loc
 
-def normalized_cross_corellation(image, template):
+
+@njit(parallel=True)
+def normalized_cross_corellation(image: np.ndarray, template: np.ndarray):
     img_height, img_width, img_channels = image.shape
     templ_height, templ_width, templ_channels = template.shape
 
-    result_shape = (img_height - templ_height + 1, img_width - templ_width + 1)
-    result = np.zeros(result_shape)
-
+    shape = (img_height - templ_height + 1, img_width - templ_width + 1)
     template_mean = np.mean(template)
-    for x in range(result_shape[0]):
-        for y in range(result_shape[1]):
+
+    max_result = max_x = max_y = 0
+    for x in range(shape[0]):
+        for y in range(shape[1]):
             window = image[x:x + templ_height, y:y + templ_width]
             window_mean = np.mean(window)
 
             numerator = np.sum((window - window_mean) * (template - template_mean))
             denominator = np.sqrt(
                 np.sum((window - window_mean) ** 2) * np.sum((template - template_mean) ** 2))
-            result[x, y] = numerator / denominator if denominator != 0 else 0
 
-    return np.unravel_index(np.argmax(result), result.shape)
+            result = numerator / denominator if denominator != 0 else 0
+
+            if result > max_result:
+                max_x = x
+                max_y = y
+                max_result = result
+
+    return max_y, max_x
 
 
 if __name__ == '__main__':
@@ -57,7 +67,7 @@ if __name__ == '__main__':
     template_src = 'samples/02/template.png'
 
     start = time.time()
-    template_match_opencv(img_src, template_src, False)
+    print(template_match_opencv(img_src, template_src, False))
     print("opencv took {} secs".format(time.time() - start))
 
     start = time.time()
