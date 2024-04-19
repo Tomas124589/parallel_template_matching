@@ -3,7 +3,7 @@ import time
 import cv2
 import numpy as np
 from PIL import Image
-from numba import njit
+from numba import njit, set_num_threads
 
 
 def rgb2gray(matrix):
@@ -69,6 +69,8 @@ def normalized_cross_correlation(image: np.ndarray, template: np.ndarray, step: 
 
 
 if __name__ == '__main__':
+    set_num_threads(8)
+
     img_src = 'samples/03/source.png'
     template_src = 'samples/03/template.png'
 
