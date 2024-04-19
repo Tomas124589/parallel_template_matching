@@ -34,8 +34,8 @@ def template_match_opencv(image_src, template_src, show):
     return max_loc
 
 
-@njit(parallel=True)
-def normalized_cross_corellation(image: np.ndarray, template: np.ndarray, step=1):
+@njit("Tuple((int64,int64))(float64[:,:,:], float64[:,:,:], int64)", parallel=True)
+def normalized_cross_correlation(image: np.ndarray, template: np.ndarray, step: int = 1):
     img_height, img_width, img_channels = image.shape
     templ_height, templ_width, templ_channels = template.shape
 
@@ -69,8 +69,8 @@ def normalized_cross_corellation(image: np.ndarray, template: np.ndarray, step=1
 
 
 if __name__ == '__main__':
-    img_src = 'samples/02/source.png'
-    template_src = 'samples/02/template.png'
+    img_src = 'samples/03/source.png'
+    template_src = 'samples/03/template.png'
 
     start = time.time()
     print(template_match_opencv(img_src, template_src, False))
@@ -82,6 +82,6 @@ if __name__ == '__main__':
     image = rgb2gray(np.array(Image.open(img_src)))
     template = rgb2gray(np.array(Image.open(template_src)))
 
-    print(normalized_cross_corellation(image, template, 6))
+    print(normalized_cross_correlation(image, template, 18))
     ccor_end = time.time() - start
     print("nccor took {:.4f} secs and was {:.4f}x slower".format(ccor_end, ccor_end / opencv_end))
