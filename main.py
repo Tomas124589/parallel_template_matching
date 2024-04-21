@@ -69,39 +69,50 @@ def normalized_cross_correlation(image: np.ndarray, template: np.ndarray, step: 
 
 
 if __name__ == '__main__':
-    set_num_threads(8)
-
     img_src = 'samples/03/source.png'
     template_src = 'samples/03/template.png'
 
     image = rgb2gray(np.array(Image.open(img_src)))
     template = rgb2gray(np.array(Image.open(template_src)))
 
-    ocv_time_total = 0
-    nccor_time_total = 0
+    thread_results = {}
 
-    measurement_cnt = 10
-    for x in range(measurement_cnt):
-        start = time.time()
-        ocv_pos = template_match_opencv(img_src, template_src, False)
-        opencv_end = time.time() - start
-        ocv_time_total = ocv_time_total + opencv_end
+    threads = [1, 2, 4, 6, 8]
+    measurement_cnt = 5
 
-        print("OpenCV {} took {:.4f} secs".format(ocv_pos, opencv_end))
+    for t in threads:
+        set_num_threads(t)
+        ocv_time_total = 0
+        nccor_time_total = 0
 
-        start = time.time()
-        nccor_pos = normalized_cross_correlation(image, template, 16)
-        nccor_end = time.time() - start
-        nccor_time_total = nccor_time_total + nccor_end
+        for x in range(measurement_cnt):
+            start = time.time()
+            ocv_pos = template_match_opencv(img_src, template_src, False)
+            opencv_end = time.time() - start
+            ocv_time_total = ocv_time_total + opencv_end
 
-        print("NCCOR {} took {:.4f} secs ({:.4f}x slower)".format(nccor_pos, nccor_end, nccor_end / opencv_end))
-        print("--------------------------------------------------")
+            print("OpenCV {} took {:.4f} secs".format(ocv_pos, opencv_end))
 
-    ocv_avg = ocv_time_total / measurement_cnt
-    nccor_avg = nccor_time_total / measurement_cnt
-    print("\n\n")
-    print("({} measures)\tTotal(s)\tAVG(s)\tNCCOR/OpenCV\tOpenCV/NCCOR".format(measurement_cnt))
-    print("OpenCV\t\t\t{:.4f}\t\t{:.4f}\t-\t\t\t\t{:.4f}"
-          .format(ocv_time_total, ocv_avg, ocv_time_total / nccor_time_total))
-    print("NCCOR\t\t\t{:.4f}\t\t{:.4f}\t{:.4f}\t\t\t-"
-          .format(nccor_time_total, nccor_avg, nccor_time_total / ocv_time_total))
+            start = time.time()
+            nccor_pos = normalized_cross_correlation(image, template, 16)
+            nccor_end = time.time() - start
+            nccor_time_total = nccor_time_total + nccor_end
+
+            print("NCCOR {} took {:.4f} secs".format(nccor_pos, nccor_end))
+            print("--------------------------------------------------")
+
+        ocv_avg = ocv_time_total / measurement_cnt
+        nccor_avg = nccor_time_total / measurement_cnt
+        print("{} measures on {} threads".format(measurement_cnt, t))
+        print("\t\t\tTotal(s)\tAVG(s)\tNCCOR/OpenCV\tOpenCV/NCCOR".format(measurement_cnt))
+        print("OpenCV\t\t\t{:.4f}\t\t{:.4f}\t-\t\t\t\t{:.4f}"
+              .format(ocv_time_total, ocv_avg, ocv_time_total / nccor_time_total))
+        print("NCCOR\t\t\t{:.4f}\t\t{:.4f}\t{:.4f}\t\t\t-"
+              .format(nccor_time_total, nccor_avg, nccor_time_total / ocv_time_total))
+
+        thread_results[t] = {'total': nccor_time_total, 'avg': nccor_avg}
+
+    print("================================================")
+    print("Threads\tTotal(s)\tAVG(s)")
+    for t_count, result in thread_results.items():
+        print("{}\t\t{:.4f}\t\t{:.4f}".format(t_count, result['total'], result['avg']))
