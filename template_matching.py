@@ -10,7 +10,7 @@ def normalized_cross_correlation(image: np.ndarray, template: np.ndarray, step: 
     shape = ((img_height - templ_height) // step + 1, (img_width - templ_width) // step + 1)
     template_mean = np.mean(template)
     template_diff = template - template_mean
-    template_sum_sqrt = np.sum((template - template_mean) ** 2)
+    template_sum_sqrt = np.sqrt(np.sum((template - template_mean) ** 2))
 
     max_result = 0.0
     max_x = max_y = 0
