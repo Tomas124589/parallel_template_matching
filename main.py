@@ -5,18 +5,12 @@ import time
 import cv2
 import numpy as np
 from PIL import Image
-from numba import njit, set_num_threads, get_num_threads
+from numba import set_num_threads, get_num_threads
+
+from template_matching import rgb2gray, normalized_cross_correlation
 
 
-def rgb2gray(matrix):
-    gray = np.dot(matrix[..., :3], [0.2989, 0.5870, 0.1140])
-    return gray[:, :, np.newaxis]
-
-
-def template_match_opencv(image_src, template_src, show):
-    image = cv2.imread(image_src, cv2.IMREAD_GRAYSCALE)
-    template = cv2.imread(template_src, cv2.IMREAD_GRAYSCALE)
-
+def template_match_opencv(image, template, show):
     templ_width, templ_height = template.shape[::-1]
 
     result = cv2.matchTemplate(image, template, cv2.TM_CCORR_NORMED)
@@ -34,40 +28,6 @@ def template_match_opencv(image_src, template_src, show):
         cv2.waitKey()
 
     return max_loc
-
-
-@njit("Tuple((int64,int64))(float64[:,:,:], float64[:,:,:], int64)", parallel=True, cache=True)
-def normalized_cross_correlation(image: np.ndarray, template: np.ndarray, step: int = 1):
-    img_height, img_width, img_channels = image.shape
-    templ_height, templ_width, templ_channels = template.shape
-
-    shape = ((img_height - templ_height) // step + 1, (img_width - templ_width) // step + 1)
-    template_mean = np.mean(template)
-    template_diff = template - template_mean
-    template_sum_sqrt = np.sum((template - template_mean) ** 2)
-
-    max_result = 0.0
-    max_x = max_y = 0
-    for x in range(shape[0]):
-        x_step = x * step
-        x_step_templ_height = x_step + templ_height
-
-        for y in range(shape[1]):
-            window = image[x_step:x_step_templ_height, y * step:y * step + templ_width]
-            window_mean = np.mean(window)
-            window_diff = window - window_mean
-
-            numerator = np.sum(window_diff * template_diff)
-            denominator = np.sqrt(np.sum(window_diff ** 2) * template_sum_sqrt)
-
-            result = numerator / denominator
-
-            if result > max_result:
-                max_x = x_step
-                max_y = y * step
-                max_result = result
-
-    return max_y, max_x
 
 
 if __name__ == '__main__':
@@ -88,6 +48,9 @@ if __name__ == '__main__':
     verbose = bool(args['verbose'])
     measurement_cnt = int(args['measurements'])
 
+    image_ocv = cv2.imread(args['image'], cv2.IMREAD_GRAYSCALE)
+    template_ocv = cv2.imread(args['template'], cv2.IMREAD_GRAYSCALE)
+
     thread_results = {}
     for t in args['threads']:
         set_num_threads(t)
@@ -96,7 +59,7 @@ if __name__ == '__main__':
 
         for x in range(measurement_cnt):
             start = time.time()
-            ocv_pos = template_match_opencv(args['image'], args['template'], False)
+            ocv_pos = template_match_opencv(image_ocv, template_ocv, False)
             opencv_end = time.time() - start
             ocv_time_total = ocv_time_total + opencv_end
 
