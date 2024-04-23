@@ -2,7 +2,7 @@ import numpy as np
 from numba import njit, prange
 
 
-@njit("Tuple((int64,int64))(float64[:,:,:], float64[:,:,:], int64)", parallel=True, cache=True)
+@njit("Tuple((int32,int32))(float64[:,:,:], float64[:,:,:], int64)", parallel=True, cache=True)
 def normalized_cross_correlation(image: np.ndarray, template: np.ndarray, step: int = 1):
     img_height, img_width, img_channels = image.shape
     templ_height, templ_width, templ_channels = template.shape
@@ -19,14 +19,14 @@ def normalized_cross_correlation(image: np.ndarray, template: np.ndarray, step: 
         local_pos = (0, 0)
 
         x_step = x * step
-        x_step_templ_height = x_step + templ_height
 
         for y in prange(shape[1]):
-            window = image[x_step:x_step_templ_height, y * step:y * step + templ_width]
+            y_step = y * step
+            window = image[x_step:x_step + templ_height, y_step:y_step + templ_width]
 
             val = np.sum(template * window) / np.sqrt(template_sum_sqrt * np.sum(window ** 2))
             if val > local_max:
-                local_pos = x_step, y * step
+                local_pos = x_step, y_step
                 local_max = val
 
         max_result[x] = local_max
